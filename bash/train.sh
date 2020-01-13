@@ -11,7 +11,7 @@ DEV_PATH=data/ewt.dev.aug.mrp \
 BERT_PATH=bert/wwm_cased_L-24_H-1024_A-16 \
 WORD_DIM=1024 \
 LOWER_CASE=FALSE \
-BATCH_SIZE=1 \
+BATCH_SIZE=8 \
 allennlp train \
 -s checkpoints/ucca_bert$SLURM_ARRAY_TASK_ID \
 --include-package utils \
