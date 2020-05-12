@@ -14,10 +14,11 @@ for split in dev test; do
   --use-dataset-reader \
   --batch-size 32 \
   --silent \
-  checkpoints/ucca_bert$SLURM_ARRAY_TASK_ID \
+  checkpoints/ucca_bert${PREFIX:-}$SLURM_ARRAY_TASK_ID \
   data/ewt.$split.aug.mrp
 
-  mkdir -p data/ucca-output$SLURM_ARRAY_TASK_ID.$split
-  python toolkit/mtool/main.py data/ucca-output$SLURM_ARRAY_TASK_ID.$split.mrp data/ucca-output$SLURM_ARRAY_TASK_ID.$split.xml --read mrp --write ucca
-  csplit -zk data/ucca-output$SLURM_ARRAY_TASK_ID.$split.xml '/^<root/' -f '' -b "data/ucca-output$SLURM_ARRAY_TASK_ID.$split/%03d.xml" {553}
+  mkdir -p data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split
+  python toolkit/mtool/main.py data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split.mrp data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split.xml --read mrp --write ucca
+  csplit -zk data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split.xml '/^<root/' -f '' -b "data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split/%03d.xml" {553}
+  python -m semstr.evaluate data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.dev data/ewt/dev -qs ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.dev.scores.txt
 done

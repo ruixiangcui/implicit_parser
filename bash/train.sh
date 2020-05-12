@@ -13,7 +13,7 @@ WORD_DIM=1024 \
 LOWER_CASE=FALSE \
 BATCH_SIZE=8 \
 allennlp train \
--s checkpoints/ucca_bert$SLURM_ARRAY_TASK_ID \
+-s checkpoints/ucca_bert${PREFIX:-}$SLURM_ARRAY_TASK_ID \
 --include-package utils \
 --include-package modules \
 --file-friendly-logging \
