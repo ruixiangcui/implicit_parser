@@ -16,5 +16,6 @@ allennlp train \
 -s checkpoints/ucca_bert${PREFIX:-}$SLURM_ARRAY_TASK_ID \
 --include-package utils \
 --include-package modules \
+--include-package metrics \
 --file-friendly-logging \
 config/transition_bert_ucca.jsonnet $*

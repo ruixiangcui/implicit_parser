@@ -1,1 +1,2 @@
 semstr>=1.2.2
+streusle>=4.3

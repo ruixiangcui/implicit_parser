@@ -11,6 +11,7 @@ for split in dev test; do
   --predictor transition_predictor_ucca \
   --include-package utils \
   --include-package modules \
+  --include-package metrics \
   --use-dataset-reader \
   --batch-size 32 \
   --silent \

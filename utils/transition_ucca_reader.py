@@ -9,7 +9,6 @@ from allennlp.data.fields import Field, TextField, MetadataField
 from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Token
-from conllu.parser import parse_line, DEFAULT_FIELDS
 from overrides import overrides
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -127,10 +126,7 @@ class Graph(object):
         return childs, child_ids
 
     def extract_token_info_from_companion_data(self):
-        annotation = []
-        for line in self.companion:
-            line = '\t'.join(line)
-            annotation.append(parse_line(line, DEFAULT_FIELDS))
+        annotation = self.companion
 
         tokens = [x["form"] for x in annotation if x["form"] is not None]
         lemmas = [x["lemma"] for x in annotation if x["lemma"] is not None]
