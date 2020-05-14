@@ -126,11 +126,10 @@ class Graph(object):
         return childs, child_ids
 
     def extract_token_info_from_companion_data(self):
-        annotation = self.companion
+        annotation = self.companion["toks"]
 
-        tokens = [x["form"] for x in annotation if x["form"] is not None]
-        lemmas = [x["lemma"] for x in annotation if x["lemma"] is not None]
-        pos_tags = [x["upostag"] for x in annotation if x["upostag"] is not None]
+        tokens, lemmas, pos_tags = [list(filter(None, (x.get(key) for x in annotation)))
+                                    for key in ("word", "lemma", "upos")]
         token_range = [tuple([int(i) for i in list(x["misc"].values())[0].split(':')]) for x in annotation]
 
         return {"tokens": tokens,
