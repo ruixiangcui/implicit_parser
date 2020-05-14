@@ -14,7 +14,7 @@ mrp_file = args.mrp
 out_file = args.output
 
 with open(conlllex_file, 'r', encoding='utf8') as f_c:
-    augs = {sent["sent_id"]: sent for sent in load_sents(conlllex_file)}
+    augs = {sent["sent_id"].replace("reviews-", ""): sent for sent in load_sents(f_c)}
 with open(mrp_file, 'r', encoding='utf8') as f_in, open(out_file, 'w', encoding='utf8') as f_out:
     for line in f_in:
         mrp = json.loads(line, object_pairs_hook=collections.OrderedDict)
