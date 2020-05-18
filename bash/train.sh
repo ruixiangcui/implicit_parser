@@ -2,7 +2,7 @@
 #SBATCH --mem=30G
 #SBATCH --time=5-0
 #SBATCH -p gpu --gres=gpu:titanx:1
-#SBATCH --array=1-3%1
+#SBATCH --array=1-1%1
 
 # UCCA
 CUDA_VISIBLE_DEVICES=0 \
