@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir -p data
+
 # Download parsed companion data from http://svn.nlpl.eu/mrp/2019/public/companion.tgz and extract
 wget -qO- http://svn.nlpl.eu/mrp/2019/public/companion.tgz?p=28375 | tar xvz
 cat mrp/2019/companion/ucca/ewt0*.conllu > data/ewt.companion.conllu
@@ -11,8 +13,8 @@ git clone https://github.com/nert-nlp/streusle -b v4.3 data/streusle
 wget -qO- http://svn.nlpl.eu/mrp/2019/public/ucca.tgz?p=28375 | tar xvz
 
 # Augment data
-python toolkit/augment_data.py data/ewt.companion.conllu mrp/2019/training/ucca/ewt.mrp data/ewt.aug.companion.mrp
-python toolkit/augment_data.py data/streusle/streusle.conllulex mrp/2019/training/ucca/ewt.mrp data/ewt.aug.streusle.mrp
+python toolkit/augment_data_conllu.py data/ewt.companion.conllu mrp/2019/training/ucca/ewt.mrp data/ewt.aug.companion.mrp
+python toolkit/augment_data_conllulex.py data/streusle/streusle.conllulex mrp/2019/training/ucca/ewt.mrp data/ewt.aug.streusle.mrp
 
 # Split augmented data to train/dev/test
 for split in train dev test; do
