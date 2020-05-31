@@ -31,4 +31,4 @@ for split in train dev test; do
 done
 
 # Get mtool
-git clone https://github.com/cfmrp/mtool -b 2019 toolkit/mtool
+git clone https://github.com/ruixiangcui/mtool -b 2019 toolkit/mtool
