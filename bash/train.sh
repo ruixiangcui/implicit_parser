@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --mem=30G
-#SBATCH --time=5-0
+#SBATCH --time=0-6
 #SBATCH -p gpu --gres=gpu:titanx:1
 #SBATCH --array=1-1%1
 

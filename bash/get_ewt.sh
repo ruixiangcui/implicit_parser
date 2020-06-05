@@ -30,5 +30,10 @@ for split in train dev test; do
   xargs -I % find data/ewt -maxdepth 1 -name '%*.pickle' < file-lists/$split.txt | xargs ln -srt data/ewt/$split
 done
 
+#Get UCCA IMP data XML
+git clone https://github.com/ruixiangcui/UCCA_English-IMP -b v0.9 data/imp
+
+
 # Get mtool
-git clone https://github.com/ruixiangcui/mtool -b 2019 toolkit/mtool
+git clone https://github.com/ruixiangcui/mtool  toolkit/mtool
+
