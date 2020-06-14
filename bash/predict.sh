@@ -15,8 +15,8 @@ for split in dev test; do
   --use-dataset-reader \
   --batch-size 32 \
   --silent \
-  checkpoints/ucca_bert${PREFIX:-}$SLURM_ARRAY_TASK_ID \
-  data/ewt.$split.aug.mrp
+  checkpoints/ucca_bert1${PREFIX:-}$SLURM_ARRAY_TASK_ID \
+  data/ewt.$split.aug.companion.mrp
 
   mkdir -p data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split
   python toolkit/mtool/main.py data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split.mrp data/ucca-output${PREFIX:-}$SLURM_ARRAY_TASK_ID.$split.xml --read mrp --write ucca

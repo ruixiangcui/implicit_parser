@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --job-name=hitparser
 #SBATCH --mem=30G
 #SBATCH --time=0-6
 #SBATCH -p gpu --gres=gpu:titanx:1
@@ -8,8 +9,8 @@
 CUDA_VISIBLE_DEVICES=0 \
 TRAIN_PATH=data/ewt.train.aug.streusle.mrp \
 DEV_PATH=data/ewt.dev.aug.streusle.mrp \
-BERT_PATH=bert/wwm_cased_L-24_H-1024_A-16 \
-WORD_DIM=1024 \
+BERT_PATH=bert/cased_L-12_H-768_A-12 \
+WORD_DIM=768 \
 LOWER_CASE=FALSE \
 BATCH_SIZE=8 \
 allennlp train \
@@ -19,3 +20,4 @@ allennlp train \
 --include-package metrics \
 --file-friendly-logging \
 config/transition_bert_ucca.jsonnet "$@"
+
