@@ -1,13 +1,12 @@
 #!/bin/bash
 #SBATCH --mem=30G
 #SBATCH --time=0-10
-#SBATCH --array=1-3
 
 # UCCA
 for split in dev test; do
   allennlp predict \
   --cuda-device -1 \
-  --output-file data/ucca-output.mrp \
+  --output-file data/ucca-output-$split.mrp \
   --predictor transition_predictor_ucca \
   --include-package utils \
   --include-package modules \
