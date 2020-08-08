@@ -9,13 +9,14 @@ from allennlp.data.fields import Field, TextField, MetadataField
 from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Token
+from conllu.parser import parse_line, DEFAULT_FIELDS
 from overrides import overrides
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # for aggregate multi-label arc
-label_prior = ['P', 'S', 'C', 'H', 'A', 'E', 'R', 'T', 'Q', 'D', 'F', 'U', 'G', 'L', 'Deictic', \
-               'Arbitrary/Nonspecific', 'Iterated/repeated/set', 'Generic', 'Genre-based', 'Type-identifiable']
+label_prior = ['P', 'S', 'C', 'H', 'A', 'E', 'R', 'T', 'Q', 'D', 'F', 'U', 'G', 'L', \
+               'Deictic', 'Arbitrary/Nonspecific', 'Iterated/repeated/set', 'Generic', 'Genre-based', 'Type-identifiable']
 label_prior_dict = {label_prior[idx]: idx for idx in range(len(label_prior))}
 for idx in range(len(label_prior)):
     label_prior_dict[label_prior[idx] + '*'] = idx + len(label_prior)
@@ -24,13 +25,17 @@ for idx in range(len(label_prior)):
 class Relation(object):
     type = None
 
-    def __init__(self, node, rel, remote=False):
+    def __init__(self, node, rel, remote=False, implicit=False):
         self.node = node
         self.rel = rel
         self.remote = remote
+        self.implicit = implicit
 
     def show(self):
-        print("Node:{},Rel:{},Is remote:{} || ".format(self.node, self.rel, self.remote), )
+        print("Node:{},Rel:{},Is remote:{},Is Implicit || ".format(self.node, self.rel, self.remote, self.implicit), )
+
+    def set_implicit(self):
+        self.implicit = True
 
 
 class Head(Relation): type = 'HEAD'
@@ -39,15 +44,20 @@ class Head(Relation): type = 'HEAD'
 class Child(Relation): type = 'CHILD'
 
 
+
 class Node(object):
     def __init__(self, info):
         self.id = info["id"]
         self.anchored = False
         self.anchors = []
+        self.implicit = False
+
 
         if "anchors" in info:
             self.anchors = [(anc["from"], anc["to"]) for anc in info["anchors"]]
             self.anchored = True
+        if "properties" in info and "implicit" in info["properties"]:
+            self.implicit = True
 
         self.heads, self.childs = [], []
         self.head_ids, self.child_ids = [], []
@@ -71,13 +81,16 @@ class Node(object):
         assert edge["source"] == self.id
         # assert self.anchored ==False
         remote = False
+        implicit = False
         if "properties" in edge and "remote" in edge["properties"] or "attributes" in edge and "remote" in edge["attributes"]:
             remote = True
+        if self.implicit:
+            implicit = True
         if edge["target"] in self.child_ids:
-            self.childs.append(Child(edge["target"], edge["label"], remote))
+            self.childs.append(Child(edge["target"], edge["label"], remote, implicit))
             # print("Multiple arcs between two nodes!")
             return True
-        self.childs.append(Child(edge["target"], edge["label"], remote))
+        self.childs.append(Child(edge["target"], edge["label"], remote, implicit))
         self.child_ids.append(edge["target"])
         return False
 
@@ -96,17 +109,28 @@ class Graph(object):
         self.nodes = {}
         if 'nodes' in js:
             for node in js["nodes"]:
+                print(node["id"], Node(node).implicit)
+                # if not Node(node).implicit:
                 self.nodes[node["id"]] = Node(node)
 
         self.edges = {}
         self.multi_arc = False
         if 'edges' in js:
             for edge in js["edges"]:
+                # if edge["target"] in self.nodes.keys():
+                    #check if has multi child or multi head, add_child/add_head methods first add and return boolean
                 multi_arc_child = self.nodes[edge["source"]].add_child(edge)
                 multi_arc_head = self.nodes[edge["target"]].add_head(edge)
 
                 if multi_arc_child or multi_arc_head:
                     self.multi_arc = True
+
+        for node_id, node in self.nodes.items():
+            childs, child_ids = self.get_childs(node_id)
+            for child, child_id in zip(childs, child_ids):
+                if "properties" in js["nodes"][child_id] and "implicit" in js["nodes"][child_id]["properties"]:
+                    child.set_implicit()
+
 
         self.meta_info = json.dumps(js)
 
@@ -127,13 +151,14 @@ class Graph(object):
         return childs, child_ids
 
     def extract_token_info_from_companion_data(self):
-        annotation = self.companion["toks"]
-
-        tokens = list(filter(None, (x.get("word", x.get("form")) for x in annotation)))
-        lemmas, pos_tags = [list(filter(None, (x.get(key) for x in annotation)))
-                                    for key in ("lemma", "upostag")]
+        annotation = []
+        for line in self.companion:
+            line = '\t'.join(line)
+            annotation.append(parse_line(line, DEFAULT_FIELDS))
+        tokens = [x["form"] for x in annotation if x["form"] is not None]
+        lemmas = [x["lemma"] for x in annotation if x["lemma"] is not None]
+        pos_tags = [x["upostag"] for x in annotation if x["upostag"] is not None]
         token_range = [tuple([int(i) for i in list(x["misc"].values())[0].split(':')]) for x in annotation]
-
         return {"tokens": tokens,
                 "lemmas": lemmas,
                 "pos_tags": pos_tags,
@@ -141,7 +166,7 @@ class Graph(object):
 
     def get_arc_info(self):
         tokens, arc_indices, arc_tags = [], [], []
-        concept_node_expect_root = []
+        concept_node_except_root = []
 
         lay_0_node_info = []
         childs_dict = {node_id: {} for node_id in self.nodes.keys()}
@@ -175,7 +200,7 @@ class Graph(object):
                         arc_tags.append("Terminal")
 
                 if node_id != self.top:
-                    concept_node_expect_root.append(node_id)
+                    concept_node_except_root.append(node_id)
 
                 self.lay_1_node.append(node_id)
 
@@ -187,6 +212,7 @@ class Graph(object):
                 _child_node = _child_of_node_info.node
                 _rel = _child_of_node_info.rel
                 _remote = _child_of_node_info.remote
+                _implicit = _child_of_node_info.implicit
 
                 _arc_tag = _rel if _remote == False else _rel + '*'
 
@@ -209,12 +235,13 @@ class Graph(object):
 
         for node_id, node_info in self.nodes.items():
             for _child_node in childs_dict[node_id]:
-                _arc_tag = childs_dict[node_id][_child_node]
+                if not self.nodes[_child_node].implicit:
+                    _arc_tag = childs_dict[node_id][_child_node]
+                    # print("arc_indices", _child_node, node_id, self.nodes[_child_node].implicit)
+                    arc_indices.append((_child_node, node_id))
+                    arc_tags.append(_arc_tag)
 
-                arc_indices.append((_child_node, node_id))
-                arc_tags.append(_arc_tag)
-
-        ###Step 3: trans arc_indices and concept_node_expect_root, add node's index with len(tokens)
+        ###Step 3: trans arc_indices and concept_node_except_root, add node's index with len(tokens)
         # add layer1_node_idx in arc_indices with len(layer0_node)
         trans_arc_indices = arc_indices[:]
         arc_indices = []
@@ -224,11 +251,11 @@ class Graph(object):
             else:
                 arc_indices.append((int(arc_info[0][8:]), arc_info[1] + len(tokens)))
 
-        # add layer1_node_idx in concept_node_expect_root with len(layer0_node)
-        trans_concept_node_expect_root = concept_node_expect_root[:]
-        concept_node_expect_root = []
-        for node_id in trans_concept_node_expect_root:
-            concept_node_expect_root.append(node_id + len(tokens))
+        # add layer1_node_idx in concept_node_except_root with len(layer0_node)
+        trans_concept_node_except_root = concept_node_except_root[:]
+        concept_node_except_root = []
+        for node_id in trans_concept_node_except_root:
+            concept_node_except_root.append(node_id + len(tokens))
 
         ###Step 4: extract lemma feature and pos_tag feature
         ### Due to the unperfect tokenization of MRP-Companion data,
@@ -273,7 +300,7 @@ class Graph(object):
                "tokens_range": lay_0_node_info,
                "arc_indices": arc_indices,
                "arc_tags": arc_tags,
-               "concept_node_expect_root": concept_node_expect_root,
+               "concept_node_except_root": concept_node_except_root,
                "root_id": self.top + len(tokens),
                "layer_0_node": self.lay_0_node,
                "layer_1_node": self.lay_1_node,
@@ -282,6 +309,7 @@ class Graph(object):
                "meta_info": self.meta_info,
                "gold_mrps": self.gold_mrps}
 
+        print ("ret is", ret)
         return ret
 
 
@@ -312,7 +340,7 @@ def expand_arc_with_descendants(arc_indices, total_node_num, len_tokens):
         graph[arc[1]]["in_degree"] += 1
 
     # i:head_point j:child_point›
-    top_down_graph = [[] for i in range(total_node_num)]  # N real point, 1 root point, concept_node_expect_root
+    top_down_graph = [[] for i in range(total_node_num)]  # N real point, 1 root point, concept_node_except_root
     step2_top_down_graph = [[] for i in range(total_node_num)]
 
     topological_stack = []
@@ -410,11 +438,11 @@ class UCCADatasetReaderConll2019(DatasetReader):
                 tokens_range = ret["tokens_range"] if "tokens_range" in ret else None
                 gold_mrps = ret["gold_mrps"] if "gold_mrps" in ret else None
 
-                concept_node_expect_root = ret["concept_node_expect_root"] if "concept_node_expect_root" in ret else None
+                concept_node_except_root = ret["concept_node_except_root"] if "concept_node_except_root" in ret else None
 
-                # In CoNLL2019, gold actions is not avaiable in test set.
+                # In CoNLL2019, gold actions is not available in test set.
                 gold_actions = get_oracle_actions(tokens, arc_indices, arc_tags, root_id, \
-                                                  concept_node_expect_root,
+                                                  concept_node_except_root,
                                                   len(ret["layer_0_node"]) + len(ret["layer_1_node"])) if "layer_1_node" in ret else None
 
                 if gold_actions and tokens and len(gold_actions) / len(tokens) > 20:
@@ -427,6 +455,8 @@ class UCCADatasetReaderConll2019(DatasetReader):
                 if gold_actions and gold_actions[-2] == '-E-':
                     print('-E-')
                     continue
+                print( self.text_to_instance(tokens, lemmas, pos_tags, arc_indices, arc_tags, gold_actions,
+                                            arc_descendants, [root_id], [meta_info], tokens_range, [gold_mrps]))
                 yield self.text_to_instance(tokens, lemmas, pos_tags, arc_indices, arc_tags, gold_actions,
                                             arc_descendants, [root_id], [meta_info], tokens_range, [gold_mrps])
 
@@ -479,11 +509,11 @@ class UCCADatasetReaderConll2019(DatasetReader):
         return Instance(fields)
 
 
-def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expect_root, total_node_num):
+def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_except_root, total_node_num):
     actions = []
     stack = [root_id]
     buffer = []
-    concept_node_expect_root = {i: False for i in concept_node_expect_root}
+    concept_node_except_root = {i: False for i in concept_node_except_root}
     generated_order = {root_id: 0}
 
     N = len(tokens)
@@ -502,7 +532,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
         graph[arc[0]].append((arc[1], arc_tag))
         whole_graph[arc[0]][arc[1]] = True
     # i:head_point j:child_point›
-    top_down_graph = [[] for i in range(total_node_num)]  # N real point, 1 root point, concept_node_expect_root
+    top_down_graph = [[] for i in range(total_node_num)]  # N real point, 1 root point, concept_node_except_root
 
     # i:child_point j:head_point ->Bool
     # partial graph during construction
@@ -573,8 +603,8 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
             return -1
         for head_node_info_of_w0 in graph[w0]:
             head_node_id = head_node_info_of_w0[0]
-            if sub_graph[w0][head_node_id] == False and head_node_id in concept_node_expect_root:
-                if concept_node_expect_root[head_node_id] == True:
+            if sub_graph[w0][head_node_id] == False and head_node_id in concept_node_except_root:
+                if concept_node_except_root[head_node_id] == True:
                     return -1
                 return head_node_id
         return -1
@@ -621,7 +651,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
 
             actions.append("NODE:" + get_arc_label(s0, concept_node_id))
 
-            concept_node_expect_root[concept_node_id] = True
+            concept_node_except_root[concept_node_id] = True
             sub_graph[s0][concept_node_id] = True
             sub_graph_arc_list.append((s0, concept_node_id))
 
@@ -656,7 +686,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
             concept_node_id = get_conpect_node_id(s0)
             buffer.append(concept_node_id)
             actions.append("REMOTE-NODE:" + get_arc_label(s0, concept_node_id))
-            concept_node_expect_root[concept_node_id] = True
+            concept_node_except_root[concept_node_id] = True
             sub_graph[s0][concept_node_id] = True
             sub_graph_arc_list.append((s0, concept_node_id))
 
@@ -664,6 +694,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
 
         else:
             remain_unfound_edge = set(arc_indices) - set(sub_graph_arc_list)
+            print(remain_unfound_edge)
             actions.append('-E-')
             return
 
@@ -687,7 +718,7 @@ def count_multi_label_arc(file_path):
 
     flag = False
     with open(file_path, 'r', encoding='utf8') as ucca_file:
-        for tokens, arc_indices, arc_tags, root_id, concept_node_expect_root in lazy_parse(ucca_file.read()):
+        for tokens, arc_indices, arc_tags, root_id, concept_node_except_root in lazy_parse(ucca_file.read()):
             flag = False
             for arc_info in arc_tags:
                 total_arc_list.append(arc_info)
