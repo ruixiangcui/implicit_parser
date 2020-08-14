@@ -109,8 +109,6 @@ class Graph(object):
         self.nodes = {}
         if 'nodes' in js:
             for node in js["nodes"]:
-                print(node["id"], Node(node).implicit)
-                # if not Node(node).implicit:
                 self.nodes[node["id"]] = Node(node)
 
         self.edges = {}
@@ -237,7 +235,6 @@ class Graph(object):
             for _child_node in childs_dict[node_id]:
                 if not self.nodes[_child_node].implicit:
                     _arc_tag = childs_dict[node_id][_child_node]
-                    # print("arc_indices", _child_node, node_id, self.nodes[_child_node].implicit)
                     arc_indices.append((_child_node, node_id))
                     arc_tags.append(_arc_tag)
 
@@ -309,7 +306,6 @@ class Graph(object):
                "meta_info": self.meta_info,
                "gold_mrps": self.gold_mrps}
 
-        print ("ret is", ret)
         return ret
 
 
@@ -455,8 +451,6 @@ class UCCADatasetReaderConll2019(DatasetReader):
                 if gold_actions and gold_actions[-2] == '-E-':
                     print('-E-')
                     continue
-                print( self.text_to_instance(tokens, lemmas, pos_tags, arc_indices, arc_tags, gold_actions,
-                                            arc_descendants, [root_id], [meta_info], tokens_range, [gold_mrps]))
                 yield self.text_to_instance(tokens, lemmas, pos_tags, arc_indices, arc_tags, gold_actions,
                                             arc_descendants, [root_id], [meta_info], tokens_range, [gold_mrps])
 
