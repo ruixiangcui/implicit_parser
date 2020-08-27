@@ -6,7 +6,7 @@
 for split in dev test; do
   allennlp predict \
   --cuda-device -1 \
-  --output-file data/ucca-output-$split.mrp \
+  --output-file data/ewt/ucca-output-$split.mrp \
   --predictor transition_predictor_ucca \
   --include-package utils \
   --include-package modules \
@@ -14,21 +14,18 @@ for split in dev test; do
   --use-dataset-reader \
   --batch-size 32 \
   --silent \
-  checkpoints/ucca_bert \
-  data/ewt.$split.aug.companion.mrp
+  checkpoints/ucca_bert_ewt \
+  data/ewt/ewt.$split.aug.mrp
 
-  mkdir -p data/ucca-output.$split
-  python toolkit/mtool/main.py data/ucca-output.$split.mrp data/ucca-output.$split.xml --read mrp --write ucca
-  csplit -zk data/ucca-output.$split.xml '/^<root/' -f '' -b "data/ucca-output.$split/%03d.xml" {553}
-  python -m semstr.evaluate data/ucca-output.dev data/ewt/dev -qs ucca-output.dev.scores.txt
+  mkdir -p data/ewt/ucca-ewt-output.$split
+  python toolkit/mtool/main.py data/ewt/ucca-ewt-output-$split.mrp data/ewt/ucca-ewt-output-$split.xml --read mrp --write ucca
+  csplit -zk data/ewt/ucca-ewt-output.$split.xml '/^<root/' -f '' -b "data/ewt/ucca-ewt-output.$split/%03d.xml" {553}
+  python -m semstr.evaluate data/ewt/ucca-ewt-output.dev data/ewt/dev -qs ucca-ewt-output.dev.scores.txt
 done
 
-  python toolkit/mtool/main.py data/ucca-output1.test.mrp data/ucca-output1.test.xml --read mrp --write ucca
-  csplit -zk data/ucca-output1.test.xml '/^<root/' -f '' -b "data/ucca-output1.test/%03d.xml" {533}
+  python toolkit/mtool/main.py data/ewt/ucca-output-dev.mrp data/ewt/ucca-output-dev.xml --read mrp --write ucca
 
-  perl -nle 'print $& while m{(?<=passageID=")[^"]*(?=")}g' data/ucca-output1.test/* > data/testname.txt
-  for file in *.xml; do read line; mv -v "${file}" "${line}.xml"; done < ../testname.txt
-
-  python -m semstr.evaluate data/ucca-output1.test data/ewt/test -qs ucca-output1.test.scores.txt
-
-  python toolkit/mtool/main.py data/ucca-output1.test.mrp data/ucca-output1.test.xml --read mrp --write ucca
+  csplit -zk data/ewt/ucca-output-dev.xml '/^<root/' -f '' -b "data/ewt/ucca-output-dev/%03d.xml" {555}
+  perl -nle 'print $& while m{(?<=passageID=")[^"]*(?=")}g' data/ewt/ucca-output-dev/* > data/ewt/dev-name.txt
+  for file in data/ewt/ucca-output-dev/*.xml; do read line; mv -v "${file}" "data/ewt/ucca-output-dev/${line}.xml"; done < data/ewt/dev-name.txt
+  python -m semstr.evaluate data/ewt/ucca-output-dev data/ewt/dev -qs data/ewt/ucca-output.dev.scores.txt

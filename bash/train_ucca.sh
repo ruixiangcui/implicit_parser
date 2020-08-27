@@ -5,8 +5,8 @@
 #SBATCH -c10
 
 CUDA_VISIBLE_DEVICES=0 \
-TRAIN_PATH=data/imp/imp.train.aug.companion.mrp \
-DEV_PATH=data/imp/imp.dev.aug.companion.mrp \
+TRAIN_PATH=data/imp/imp.train.aug.mrp \
+DEV_PATH=data/imp/imp.dev.aug.mrp \
 BERT_PATH=bert/wwm_cased_L-24_H-1024_A-16 \
 WORD_DIM=1024 \
 LOWER_CASE=FALSE \

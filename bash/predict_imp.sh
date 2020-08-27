@@ -14,7 +14,7 @@ for split in dev test; do
   --use-dataset-reader \
   --batch-size 32 \
   checkpoints/ucca_bert \
-  data/imp/imp.$split.aug.companion.mrp
+  data/imp/imp.$split.aug.mrp
 
   mkdir -p data/imp/ucca-imp-output-$split
   python toolkit/mtool/main.py data/imp/ucca-imp-output-$split.mrp data/imp/ucca-imp-output-$split.xml --read mrp --write ucca
