@@ -23,11 +23,21 @@ for split in dev test; do
 done
 
 -------------------------------------------
-  csplit -zk ucca-imp-output-dev.xml '/^<root/' -f '' -b "ucca-imp-output-dev/%03d.xml" {533}
+  csplit -zk ucca-imp-output.test.xml '/^<root/' -f '' -b "ucca-imp-output.test/%03d.xml" {533}
 
-  perl -nle 'print $& while m{(?<=passageID=")[^"]*(?=")}g' data/imp/ucca-imp-output-$split/* > data/imp/$split-name.txt
-  for file in *.xml; do read line; mv -v "${file}" "${line}.xml"; done < ../testname.txt
+  perl -nle 'print $& while m{(?<=passageID=")[^"]*(?=")}g' data/imp_wo_support/ucca-imp-output-$split/* > data/imp_wo_support/$split-name.txt
+  for file in *.xml; do read line; mv -v "${file}" "${line}.xml"; done < ../$split-name.txt
 
-  python -m semstr.evaluate data/ucca-output1.test data/ewt/test -qs ucca-output1.test.scores.txt
+  python -m semstr.evaluate data/imp_wo_support/ucca-imp-output.test data/imp/test/ -qs data/imp_wo_support/ucca-output.test.scores.txt
 
-  python toolkit/mtool/main.py data/ucca-output1.test.mrp data/ucca-output1.test.xml --read mrp --write ucca
+  allennlp predict \
+  --cuda-device -1 \
+  --output-file data/ucca-imp-output-test.mrp \
+  --predictor transition_predictor_ucca \
+  --include-package utils \
+  --include-package modules \
+  --include-package metrics \
+  --use-dataset-reader \
+  --batch-size 32 \
+  checkpoints/ucca_bert \
+  data/imp/imp.test.aug.mrp
