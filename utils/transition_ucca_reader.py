@@ -164,7 +164,7 @@ class Graph(object):
 
     def get_arc_info(self):
         tokens, arc_indices, arc_tags = [], [], []
-        concept_node_except_root = []
+        concept_node_expect_root = []
 
         lay_0_node_info = []
         childs_dict = {node_id: {} for node_id in self.nodes.keys()}
@@ -198,7 +198,7 @@ class Graph(object):
                         arc_tags.append("Terminal")
 
                 if node_id != self.top:
-                    concept_node_except_root.append(node_id)
+                    concept_node_expect_root.append(node_id)
 
                 self.lay_1_node.append(node_id)
 
@@ -238,7 +238,7 @@ class Graph(object):
                     arc_indices.append((_child_node, node_id))
                     arc_tags.append(_arc_tag)
 
-        ###Step 3: trans arc_indices and concept_node_except_root, add node's index with len(tokens)
+        ###Step 3: trans arc_indices and concept_node_expect_root, add node's index with len(tokens)
         # add layer1_node_idx in arc_indices with len(layer0_node)
         trans_arc_indices = arc_indices[:]
         arc_indices = []
@@ -248,11 +248,11 @@ class Graph(object):
             else:
                 arc_indices.append((int(arc_info[0][8:]), arc_info[1] + len(tokens)))
 
-        # add layer1_node_idx in concept_node_except_root with len(layer0_node)
-        trans_concept_node_except_root = concept_node_except_root[:]
-        concept_node_except_root = []
-        for node_id in trans_concept_node_except_root:
-            concept_node_except_root.append(node_id + len(tokens))
+        # add layer1_node_idx in concept_node_expect_root with len(layer0_node)
+        trans_concept_node_expect_root = concept_node_expect_root[:]
+        concept_node_expect_root = []
+        for node_id in trans_concept_node_expect_root:
+            concept_node_expect_root.append(node_id + len(tokens))
 
         ###Step 4: extract lemma feature and pos_tag feature
         ### Due to the unperfect tokenization of MRP-Companion data,
@@ -297,7 +297,7 @@ class Graph(object):
                "tokens_range": lay_0_node_info,
                "arc_indices": arc_indices,
                "arc_tags": arc_tags,
-               "concept_node_except_root": concept_node_except_root,
+               "concept_node_expect_root": concept_node_expect_root,
                "root_id": self.top + len(tokens),
                "layer_0_node": self.lay_0_node,
                "layer_1_node": self.lay_1_node,
@@ -336,7 +336,7 @@ def expand_arc_with_descendants(arc_indices, total_node_num, len_tokens):
         graph[arc[1]]["in_degree"] += 1
 
     # i:head_point j:child_point›
-    top_down_graph = [[] for i in range(total_node_num)]  # N real point, 1 root point, concept_node_except_root
+    top_down_graph = [[] for i in range(total_node_num)]  # N real point, 1 root point, concept_node_expect_root
     step2_top_down_graph = [[] for i in range(total_node_num)]
 
     topological_stack = []
@@ -434,11 +434,11 @@ class UCCADatasetReaderConll2019(DatasetReader):
                 tokens_range = ret["tokens_range"] if "tokens_range" in ret else None
                 gold_mrps = ret["gold_mrps"] if "gold_mrps" in ret else None
 
-                concept_node_except_root = ret["concept_node_except_root"] if "concept_node_except_root" in ret else None
+                concept_node_expect_root = ret["concept_node_expect_root"] if "concept_node_expect_root" in ret else None
 
                 # In CoNLL2019, gold actions is not available in test set.
                 gold_actions = get_oracle_actions(tokens, arc_indices, arc_tags, root_id, \
-                                                  concept_node_except_root,
+                                                  concept_node_expect_root,
                                                   len(ret["layer_0_node"]) + len(ret["layer_1_node"])) if "layer_1_node" in ret else None
 
                 if gold_actions and tokens and len(gold_actions) / len(tokens) > 20:
@@ -503,11 +503,11 @@ class UCCADatasetReaderConll2019(DatasetReader):
         return Instance(fields)
 
 
-def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_except_root, total_node_num):
+def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expect_root, total_node_num):
     actions = []
     stack = [root_id]
     buffer = []
-    concept_node_except_root = {i: False for i in concept_node_except_root}
+    concept_node_expect_root = {i: False for i in concept_node_expect_root}
     generated_order = {root_id: 0}
 
     N = len(tokens)
@@ -597,8 +597,8 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_exce
             return -1
         for head_node_info_of_w0 in graph[w0]:
             head_node_id = head_node_info_of_w0[0]
-            if sub_graph[w0][head_node_id] == False and head_node_id in concept_node_except_root:
-                if concept_node_except_root[head_node_id] == True:
+            if sub_graph[w0][head_node_id] == False and head_node_id in concept_node_expect_root:
+                if concept_node_expect_root[head_node_id] == True:
                     return -1
                 return head_node_id
         return -1
@@ -645,7 +645,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_exce
 
             actions.append("NODE:" + get_arc_label(s0, concept_node_id))
 
-            concept_node_except_root[concept_node_id] = True
+            concept_node_expect_root[concept_node_id] = True
             sub_graph[s0][concept_node_id] = True
             sub_graph_arc_list.append((s0, concept_node_id))
 
@@ -680,7 +680,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_exce
             concept_node_id = get_conpect_node_id(s0)
             buffer.append(concept_node_id)
             actions.append("REMOTE-NODE:" + get_arc_label(s0, concept_node_id))
-            concept_node_except_root[concept_node_id] = True
+            concept_node_expect_root[concept_node_id] = True
             sub_graph[s0][concept_node_id] = True
             sub_graph_arc_list.append((s0, concept_node_id))
 
@@ -712,7 +712,7 @@ def count_multi_label_arc(file_path):
 
     flag = False
     with open(file_path, 'r', encoding='utf8') as ucca_file:
-        for tokens, arc_indices, arc_tags, root_id, concept_node_except_root in lazy_parse(ucca_file.read()):
+        for tokens, arc_indices, arc_tags, root_id, concept_node_expect_root in lazy_parse(ucca_file.read()):
             flag = False
             for arc_info in arc_tags:
                 total_arc_list.append(arc_info)
