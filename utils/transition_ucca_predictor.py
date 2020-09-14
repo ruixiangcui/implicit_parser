@@ -119,7 +119,7 @@ def ucca_trans_outputs_into_mrp(outputs):
 
     ###Directed Edges /Edge Labels /Edge Attributes
     # 1. need post-processing the mutli-label edge
-    # 2. edge prorperty, i.e remote-edges
+    # 2. edge property, i.e remote-edges
     edges_info = []
     for edge_info in edge_list:
         for edge_label in edge_info[-1].split('+'):
@@ -133,6 +133,17 @@ def ucca_trans_outputs_into_mrp(outputs):
                                    "attributes": ["remote"],
                                    "values": [True]
                                    })
+
+            # implicit node/edge
+            elif '#' in edge_info[-1]:
+                edges_info.append({"label": edge_label[0],
+                                   "source": projection_dict[edge_info[1]],
+                                   "target": projection_dict[edge_info[0]],
+                                   })
+
+                ret_dict["nodes"][projection_dict[edge_info[0]]]["properties"] = ["implicit"]
+                ret_dict["nodes"][projection_dict[edge_info[0]]]["values"] = [True]
+
             # primary edge
             else:
                 edges_info.append({"label": edge_label[0],

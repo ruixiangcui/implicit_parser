@@ -226,7 +226,7 @@ class TransitionParser(Model):
                       self.vocab.get_token_to_index_vocabulary('actions').keys() if a.startswith(action_)]
             for action_ in
             ["SHIFT", "REDUCE", "NODE", "REMOTE-NODE", "LEFT-EDGE", "RIGHT-EDGE", "LEFT-REMOTE", "RIGHT-REMOTE", "SWAP",
-             "FINISH"]
+             "FINISH", "IMPLICIT"]
         }
 
         # compute probability of each of the actions and choose an action
@@ -262,6 +262,7 @@ class TransitionParser(Model):
                         if self.stack.get_len(sent_idx) > 0:
                             valid_actions += action_id['REDUCE']
                             valid_actions += action_id['NODE']
+                            valid_actions += action_id['IMPLICIT']
                             valid_actions += action_id['REMOTE-NODE']
                     except:
                         pass
@@ -316,7 +317,7 @@ class TransitionParser(Model):
                             losses[sent_idx].append(loss)
 
                     # generate concept node, recursive way
-                    if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
+                    if action in action_id["NODE"] + action_id["REMOTE-NODE"] + action_id["IMPLICIT"]:
                         concept_node_token = len(concept_node[sent_idx]) + sent_len[sent_idx]
                         concept_node[sent_idx].append(concept_node_token)
 
@@ -334,7 +335,8 @@ class TransitionParser(Model):
                         total_node_num[sent_idx] = sent_len[sent_idx] + len(concept_node[sent_idx])
 
                     if action in action_id["NODE"] + action_id["REMOTE-NODE"] + action_id["LEFT-EDGE"] \
-                            + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"]:
+                            + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"] \
+                            + action_id["IMPLICIT"]:
 
                         if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
                             head = self.buffer.get_stack(sent_idx)[-1]
@@ -343,6 +345,11 @@ class TransitionParser(Model):
                         elif action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
                             head = self.stack.get_stack(sent_idx)[-1]
                             modifier = self.stack.get_stack(sent_idx)[-2]
+
+                        elif action == action_id["IMPLICIT"]:
+                            head = self.stack.get_stack(sent_idx)[-1]
+                            modifier = self.buffer.get_stack(sent_idx)[-1]
+
                         else:
                             head = self.stack.get_stack(sent_idx)[-2]
                             modifier = self.stack.get_stack(sent_idx)[-1]
@@ -376,6 +383,11 @@ class TransitionParser(Model):
                                              input=comp_rep,
                                              extra={'token': head_tok})
 
+                        elif action in action_id["IMPLICIT"]:
+                            self.buffer.pop(sent_idx)
+                            self.buffer.push(sent_idx,
+                                             input=comp_rep,
+                                             extra={'token': mod_tok})
 
                         elif action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
                             self.stack.pop(sent_idx)
