@@ -346,7 +346,7 @@ class TransitionParser(Model):
                             head = self.stack.get_stack(sent_idx)[-1]
                             modifier = self.stack.get_stack(sent_idx)[-2]
 
-                        elif action == action_id["IMPLICIT"]:
+                        elif action in action_id["IMPLICIT"]:
                             head = self.stack.get_stack(sent_idx)[-1]
                             modifier = self.buffer.get_stack(sent_idx)[-1]
 
