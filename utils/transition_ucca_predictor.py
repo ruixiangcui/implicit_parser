@@ -136,7 +136,7 @@ def ucca_trans_outputs_into_mrp(outputs):
 
             # implicit node/edge
             elif '#' in edge_info[-1]:
-                edges_info.append({"label": edge_label[0],
+                edges_info.append({"label": edge_label[:-1],
                                    "source": projection_dict[edge_info[1]],
                                    "target": projection_dict[edge_info[0]],
                                    })
