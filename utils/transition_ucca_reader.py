@@ -453,6 +453,7 @@ class UCCADatasetReaderConll2019(DatasetReader):
                 gold_actions = get_oracle_actions(tokens, arc_indices, arc_tags, root_id, \
                                                   concept_node_expect_root,
                                                   len(ret["layer_0_node"]) + len(ret["layer_1_node"])) if "layer_1_node" in ret else None
+                print("gold_actions", gold_actions)
 
                 if gold_actions and tokens and len(gold_actions) / len(tokens) > 20:
                     print(len(gold_actions) / len(tokens))
@@ -672,25 +673,28 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
         elif s0 != root_id and get_conpect_node_id(s0) != -1 and has_head(s0, get_conpect_node_id(
                 s0)) and not has_find_primary_head(s0):
             concept_node_id = get_conpect_node_id(s0)
-            buffer.append(concept_node_id)
-
-            actions.append("NODE:" + get_arc_label(s0, concept_node_id))
-
+            stack.insert(-1, concept_node_id)
+            s0 = stack[-1] if len(stack) > 0 else -1
+            s1 = stack[-2] if len(stack) > 1 else -1
+            actions.append("NODE")
             concept_node_expect_root[concept_node_id] = True
-            sub_graph[s0][concept_node_id] = True
-            sub_graph_arc_list.append((s0, concept_node_id))
+            # actions.append("NODE:" + get_arc_label(s0, concept_node_id))
+            # sub_graph[s0][concept_node_id] = True
+            # sub_graph_arc_list.append((s0, concept_node_id))
 
             return
 
         #IMPLICIT
         elif s0!=-1 and has_implicit_child(s0):
             implicit_node_id = get_implicit_child(s0)
-            buffer.append(implicit_node_id)
+            stack.append(implicit_node_id)
+            s0 = stack[-1] if len(stack) > 0 else -1
+            s1 = stack[-2] if len(stack) > 1 else -1
 
-            actions.append("IMPLICIT:" + get_arc_label(implicit_node_id, s0))
+            actions.append("IMPLICIT")
 
-            sub_graph[implicit_node_id][s0] = True
-            sub_graph_arc_list.append((implicit_node_id, s0))
+            # sub_graph[implicit_node_id][s0] = True
+            # sub_graph_arc_list.append((implicit_node_id, s0))
 
         # REDUCE
         elif s0 != -1 and not has_unfound_child(s0) and not lack_head(s0):
