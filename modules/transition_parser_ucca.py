@@ -122,6 +122,7 @@ class TransitionParser(Model):
         # key: id_of_point
         # value: a list of tuples -> [(id_of_head1, label),(id_of_head2, label)，...]
         for arc in arc_indices:
+            print (arc)
             graph[arc[0]]["head_list"].append((arc[1], arc[2]))
             graph[arc[1]]["in_degree"] += 1
 
@@ -301,6 +302,8 @@ class TransitionParser(Model):
 
                     if oracle_actions is not None:
                         action = oracle_actions[sent_idx].pop(0)
+                        print(oracle_actions)
+                        print(action)
 
                     # push action into action_stack
                     self.action_stack.push(sent_idx,
@@ -334,21 +337,19 @@ class TransitionParser(Model):
 
                         total_node_num[sent_idx] = sent_len[sent_idx] + len(concept_node[sent_idx])
 
-                    if action in action_id["NODE"] + action_id["REMOTE-NODE"] + action_id["LEFT-EDGE"] \
-                            + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"] \
-                            + action_id["IMPLICIT"]:
+                    if action in action_id["LEFT-EDGE"] + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"] :
 
-                        if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
-                            head = self.buffer.get_stack(sent_idx)[-1]
-                            modifier = self.stack.get_stack(sent_idx)[-1]
+                        # if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
+                        #     head = self.buffer.get_stack(sent_idx)[-1]
+                        #     modifier = self.stack.get_stack(sent_idx)[-1]
 
-                        elif action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
+                        if action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
                             head = self.stack.get_stack(sent_idx)[-1]
                             modifier = self.stack.get_stack(sent_idx)[-2]
 
-                        elif action in action_id["IMPLICIT"]:
-                            head = self.stack.get_stack(sent_idx)[-1]
-                            modifier = self.buffer.get_stack(sent_idx)[-1]
+                        # elif action in action_id["IMPLICIT"]:
+                        #     head = self.stack.get_stack(sent_idx)[-1]
+                        #     modifier = self.buffer.get_stack(sent_idx)[-1]
 
                         else:
                             head = self.stack.get_stack(sent_idx)[-2]
@@ -378,14 +379,14 @@ class TransitionParser(Model):
                         comp_rep = torch.tanh(self.p_comp(comp_rep))
 
                         if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
-                            self.buffer.pop(sent_idx)
-                            self.buffer.push(sent_idx,
+                            self.stack.pop_penult(sent_idx)
+                            self.stack.push_penult(sent_idx,
                                              input=comp_rep,
                                              extra={'token': head_tok})
 
                         elif action in action_id["IMPLICIT"]:
-                            self.buffer.pop(sent_idx)
-                            self.buffer.push(sent_idx,
+                            self.stack.pop(sent_idx)
+                            self.stack.push(sent_idx,
                                              input=comp_rep,
                                              extra={'token': mod_tok})
 
