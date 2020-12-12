@@ -568,6 +568,13 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
                 return True
         return False
 
+    def has_find_implicit_child(w0):
+        if w0 < 0:
+            return False
+        if sub_graph[w0][implicit_info[w0][-1]] == True:
+            return True
+        return False
+
     # return if w1 is one head of w0
     def has_head(w0, w1):
         if w0 < 0 or w1 < 0:
@@ -632,8 +639,10 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
             return True
 
     def get_implicit_child(w0):
-        i = implicit_info[w0].pop()
-        return i
+        if not implicit_info[w0]:
+            return False
+        else:
+            return implicit_info[w0].pop()
 
     def check_graph_finish():
         return whole_graph == sub_graph
@@ -670,12 +679,13 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
             return
 
         # NODE
-        elif s0 != root_id and get_conpect_node_id(s0) != -1 and has_head(s0, get_conpect_node_id(
-                s0)) and not has_find_primary_head(s0):
-            concept_node_id = get_conpect_node_id(s0)
-            stack.insert(-1, concept_node_id)
-            s0 = stack[-1] if len(stack) > 0 else -1
-            s1 = stack[-2] if len(stack) > 1 else -1
+        elif s0 != root_id and ((get_conpect_node_id(s0) != -1 and has_head(s0, get_conpect_node_id(
+                s0)) and not has_find_primary_head(s0)) or (has_implicit_child(s0) and not has_find_implicit_child(s0))):
+            if get_conpect_node_id(s0) != -1 and not has_find_primary_head(s0) and not get_implicit_child(s0):
+                concept_node_id = get_conpect_node_id(s0)
+            else:
+                concept_node_id = get_implicit_child(s0)
+            stack.append(concept_node_id)
             actions.append("NODE")
             concept_node_expect_root[concept_node_id] = True
             # actions.append("NODE:" + get_arc_label(s0, concept_node_id))
@@ -684,14 +694,12 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
 
             return
 
-        #IMPLICIT
-        elif s0!=-1 and has_implicit_child(s0):
-            implicit_node_id = get_implicit_child(s0)
-            stack.append(implicit_node_id)
-            s0 = stack[-1] if len(stack) > 0 else -1
-            s1 = stack[-2] if len(stack) > 1 else -1
-
-            actions.append("IMPLICIT")
+        # #IMPLICIT
+        # elif s0!=-1 and has_implicit_child(s0):
+        #     implicit_node_id = get_implicit_child(s0)
+        #     buffer.append(implicit_node_id)
+        #
+        #     actions.append("IMPLICIT:" + get_arc_label(implicit_node_id, s0))
 
             # sub_graph[implicit_node_id][s0] = True
             # sub_graph_arc_list.append((implicit_node_id, s0))
