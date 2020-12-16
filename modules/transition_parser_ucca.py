@@ -122,7 +122,6 @@ class TransitionParser(Model):
         # key: id_of_point
         # value: a list of tuples -> [(id_of_head1, label),(id_of_head2, label)，...]
         for arc in arc_indices:
-            print (arc)
             graph[arc[0]]["head_list"].append((arc[1], arc[2]))
             graph[arc[1]]["in_degree"] += 1
 
@@ -227,7 +226,7 @@ class TransitionParser(Model):
                       self.vocab.get_token_to_index_vocabulary('actions').keys() if a.startswith(action_)]
             for action_ in
             ["SHIFT", "REDUCE", "NODE", "REMOTE-NODE", "LEFT-EDGE", "RIGHT-EDGE", "LEFT-REMOTE", "RIGHT-REMOTE", "SWAP",
-             "FINISH", "IMPLICIT"]
+             "FINISH"]
         }
 
         # compute probability of each of the actions and choose an action
@@ -263,7 +262,6 @@ class TransitionParser(Model):
                         if self.stack.get_len(sent_idx) > 0:
                             valid_actions += action_id['REDUCE']
                             valid_actions += action_id['NODE']
-                            valid_actions += action_id['IMPLICIT']
                             valid_actions += action_id['REMOTE-NODE']
                     except:
                         pass
@@ -302,8 +300,6 @@ class TransitionParser(Model):
 
                     if oracle_actions is not None:
                         action = oracle_actions[sent_idx].pop(0)
-                        print(oracle_actions)
-                        print(action)
 
                     # push action into action_stack
                     self.action_stack.push(sent_idx,
@@ -320,7 +316,7 @@ class TransitionParser(Model):
                             losses[sent_idx].append(loss)
 
                     # generate concept node, recursive way
-                    if action in action_id["NODE"] + action_id["REMOTE-NODE"] + action_id["IMPLICIT"]:
+                    if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
                         concept_node_token = len(concept_node[sent_idx]) + sent_len[sent_idx]
                         concept_node[sent_idx].append(concept_node_token)
 
@@ -337,19 +333,16 @@ class TransitionParser(Model):
 
                         total_node_num[sent_idx] = sent_len[sent_idx] + len(concept_node[sent_idx])
 
-                    if action in action_id["LEFT-EDGE"] + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"] :
+                    if action in action_id["NODE"] + action_id["REMOTE-NODE"] + action_id["LEFT-EDGE"] \
+                            + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"]:
 
-                        # if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
-                        #     head = self.buffer.get_stack(sent_idx)[-1]
-                        #     modifier = self.stack.get_stack(sent_idx)[-1]
-
-                        if action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
+                        if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
                             head = self.stack.get_stack(sent_idx)[-1]
                             modifier = self.stack.get_stack(sent_idx)[-2]
 
-                        # elif action in action_id["IMPLICIT"]:
-                        #     head = self.stack.get_stack(sent_idx)[-1]
-                        #     modifier = self.buffer.get_stack(sent_idx)[-1]
+                        elif action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
+                            head = self.stack.get_stack(sent_idx)[-1]
+                            modifier = self.stack.get_stack(sent_idx)[-2]
 
                         else:
                             head = self.stack.get_stack(sent_idx)[-2]
@@ -379,16 +372,10 @@ class TransitionParser(Model):
                         comp_rep = torch.tanh(self.p_comp(comp_rep))
 
                         if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
-                            self.stack.pop_penult(sent_idx)
-                            self.stack.push_penult(sent_idx,
+                            self.buffer.pop(sent_idx)
+                            self.buffer.push(sent_idx,
                                              input=comp_rep,
                                              extra={'token': head_tok})
-
-                        elif action in action_id["IMPLICIT"]:
-                            self.stack.pop(sent_idx)
-                            self.stack.push(sent_idx,
-                                             input=comp_rep,
-                                             extra={'token': mod_tok})
 
                         elif action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
                             self.stack.pop(sent_idx)

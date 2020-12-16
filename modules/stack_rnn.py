@@ -110,20 +110,6 @@ class StackRnn(torch.nn.Module):
         if extra is not None:
             self.push_buffer[stack_index].update(extra)
 
-    def push_penult(self,
-             stack_index: int,
-             input: torch.Tensor,
-             extra: Optional[Dict[str, Any]] = None) -> None:
-        if self.push_buffer[stack_index] is not None:
-            self._apply_push()
-        stack_0 = self.get_stack(stack_index)[-1]
-        stack_0_emb, stack_0_token = stack_0['stack_rnn_input'], stack_0['token']
-        self.stacks[stack_index].pop(-1)
-        self.push_buffer[stack_index] = {'stack_rnn_input': input}
-        if extra is not None:
-            self.push_buffer[stack_index].update(extra)
-        self.push(stack_index, stack_0_emb, {'token': stack_0_token})
-
     def pop(self,
             stack_index: int) -> Dict[str, Any]:
         if self.push_buffer[stack_index] is not None:

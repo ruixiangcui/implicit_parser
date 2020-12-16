@@ -680,13 +680,18 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
 
         # NODE
         elif s0 != root_id and ((get_conpect_node_id(s0) != -1 and has_head(s0, get_conpect_node_id(
-                s0)) and not has_find_primary_head(s0)) or (has_implicit_child(s0) and not has_find_implicit_child(s0))):
-            if get_conpect_node_id(s0) != -1 and not has_find_primary_head(s0) and not get_implicit_child(s0):
+                s0)) and not has_find_primary_head(s0)) or (s0 != -1 and has_implicit_child(s0) and not has_find_implicit_child(s0))):
+            if get_conpect_node_id(s0) != -1 and not has_find_primary_head(s0) and not has_implicit_child(s0):
                 concept_node_id = get_conpect_node_id(s0)
             else:
                 concept_node_id = get_implicit_child(s0)
-            stack.append(concept_node_id)
+            buffer.append(concept_node_id)
             actions.append("NODE")
+
+            num_of_generated_node = len(generated_order)
+            # generated_order[stack[-2]] = num_of_generated_node
+            generated_order[buffer[-1]] = num_of_generated_node
+
             concept_node_expect_root[concept_node_id] = True
             # actions.append("NODE:" + get_arc_label(s0, concept_node_id))
             # sub_graph[s0][concept_node_id] = True
@@ -711,7 +716,7 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
             return
 
         # SWAP
-        elif len(stack) > 2  and (
+        elif len(stack) > 2 and generated_order[s0] > generated_order[s1] and (
                 has_unfound_child(stack[-3]) or lack_head(stack[-3])):
             buffer.append(stack.pop(-2))
             actions.append("SWAP")
@@ -731,17 +736,19 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
         # REMOTE-NODE
         elif s0 != root_id and get_conpect_node_id(s0) != -1 and has_remote_edge(s0, get_conpect_node_id(s0)):
             concept_node_id = get_conpect_node_id(s0)
-            buffer.append(concept_node_id)
-            actions.append("REMOTE-NODE:" + get_arc_label(s0, concept_node_id))
+            stack.insert(-1, concept_node_id)
+            actions.append("REMOTE-NODE")
             concept_node_expect_root[concept_node_id] = True
-            sub_graph[s0][concept_node_id] = True
-            sub_graph_arc_list.append((s0, concept_node_id))
+
+            num_of_generated_node = len(generated_order)
+            generated_order[stack[-2]] = num_of_generated_node
+            concept_node_expect_root[concept_node_id] = True
 
             return
 
         else:
             remain_unfound_edge = set(arc_indices) - set(sub_graph_arc_list)
-            print(remain_unfound_edge)
+            print("unfound edge: ", remain_unfound_edge)
             actions.append('-E-')
             return
 
