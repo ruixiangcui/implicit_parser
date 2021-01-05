@@ -688,26 +688,8 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
             buffer.append(concept_node_id)
             actions.append("NODE")
 
-            num_of_generated_node = len(generated_order)
-            # generated_order[stack[-2]] = num_of_generated_node
-            generated_order[buffer[-1]] = num_of_generated_node
-
             concept_node_expect_root[concept_node_id] = True
-            # actions.append("NODE:" + get_arc_label(s0, concept_node_id))
-            # sub_graph[s0][concept_node_id] = True
-            # sub_graph_arc_list.append((s0, concept_node_id))
-
             return
-
-        # #IMPLICIT
-        # elif s0!=-1 and has_implicit_child(s0):
-        #     implicit_node_id = get_implicit_child(s0)
-        #     buffer.append(implicit_node_id)
-        #
-        #     actions.append("IMPLICIT:" + get_arc_label(implicit_node_id, s0))
-
-            # sub_graph[implicit_node_id][s0] = True
-            # sub_graph_arc_list.append((implicit_node_id, s0))
 
         # REDUCE
         elif s0 != -1 and not has_unfound_child(s0) and not lack_head(s0):
@@ -736,14 +718,9 @@ def get_oracle_actions(tokens, arc_indices, arc_tags, root_id, concept_node_expe
         # REMOTE-NODE
         elif s0 != root_id and get_conpect_node_id(s0) != -1 and has_remote_edge(s0, get_conpect_node_id(s0)):
             concept_node_id = get_conpect_node_id(s0)
-            stack.insert(-1, concept_node_id)
+            buffer.append(concept_node_id)
             actions.append("REMOTE-NODE")
             concept_node_expect_root[concept_node_id] = True
-
-            num_of_generated_node = len(generated_order)
-            generated_order[stack[-2]] = num_of_generated_node
-            concept_node_expect_root[concept_node_id] = True
-
             return
 
         else:

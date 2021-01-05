@@ -333,14 +333,9 @@ class TransitionParser(Model):
 
                         total_node_num[sent_idx] = sent_len[sent_idx] + len(concept_node[sent_idx])
 
-                    if action in action_id["NODE"] + action_id["REMOTE-NODE"] + action_id["LEFT-EDGE"] \
-                            + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"]:
+                    if action in action_id["LEFT-EDGE"] + action_id["RIGHT-EDGE"] + action_id["LEFT-REMOTE"] + action_id["RIGHT-REMOTE"]:
 
-                        if action in action_id["NODE"] + action_id["REMOTE-NODE"]:
-                            head = self.stack.get_stack(sent_idx)[-1]
-                            modifier = self.stack.get_stack(sent_idx)[-2]
-
-                        elif action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
+                        if action in action_id["LEFT-EDGE"] + action_id["LEFT-REMOTE"]:
                             head = self.stack.get_stack(sent_idx)[-1]
                             modifier = self.stack.get_stack(sent_idx)[-2]
 
