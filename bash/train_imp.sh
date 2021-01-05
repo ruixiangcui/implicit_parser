@@ -1,18 +1,22 @@
 #!/bin/bash
 #SBATCH --mem=30G
-#SBATCH --time=1-0
-#SBATCH -p gpu --gres=gpu:titanrtx:1
+#SBATCH --time=5-0
+#SBATCH -p gpu --gres=gpu:titanx:1
 #SBATCH -c10
+#SBATCH --array=1-3%1
 
-CUDA_VISIBLE_DEVICES=0 \
+exp=$1
+CHECKPOINTS=checkpoints/$exp${PREFIX:-}$SLURM_ARRAY_TASK_ID
+
 TRAIN_PATH=data/imp/imp.train.aug.mrp \
 DEV_PATH=data/imp/imp.dev.aug.mrp \
 BERT_PATH=bert/wwm_cased_L-24_H-1024_A-16 \
 WORD_DIM=1024 \
 LOWER_CASE=FALSE \
+SEED=$SLURM_ARRAY_TASK_ID \
 BATCH_SIZE=4 \
 allennlp train \
--s checkpoints/ucca_bert \
+-s $CHECKPOINTS \
 --include-package utils \
 --include-package modules \
 --include-package metrics \
