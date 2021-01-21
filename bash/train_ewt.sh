@@ -1,12 +1,15 @@
 #!/bin/bash
 #SBATCH --mem=30G
 #SBATCH --time=7-0
-#SBATCH -p gpu --gres=gpu:titanx:1
+#SBATCH -p gpu --gres=gpu:titanrtx:1
 #SBATCH -c10
 #SBATCH --array=1-3%1
 
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=rc@di.ku.dk
+
 exp=$1
-CHECKPOINTS=checkpoints/$exp${PREFIX:-}$SLURM_ARRAY_TASK_ID
+CHECKPOINTS=checkpoints/ewt_$exp${PREFIX:-}$SLURM_ARRAY_TASK_ID
 
 TRAIN_PATH=data/ewt/ewt.train.aug.mrp \
 DEV_PATH=data/ewt/ewt.dev.aug.mrp \
