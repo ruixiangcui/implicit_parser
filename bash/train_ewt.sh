@@ -1,19 +1,25 @@
 #!/bin/bash
 #SBATCH --mem=30G
-#SBATCH --time=5-0
+#SBATCH --time=7-0
 #SBATCH -p gpu --gres=gpu:titanrtx:1
 #SBATCH -c10
+#SBATCH --array=1-3%1
 
-CUDA_VISIBLE_DEVICES=0 \
-TRAIN_PATH=data/ewt.train.aug.mrp \
-DEV_PATH=data/ewt.dev.aug.mrp \
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=rc@di.ku.dk
+
+exp=$1
+CHECKPOINTS=checkpoints/ewt_$exp${PREFIX:-}$SLURM_ARRAY_TASK_ID
+
+TRAIN_PATH=data/ewt/ewt.train.aug.mrp \
+DEV_PATH=data/ewt/ewt.dev.aug.mrp \
 BERT_PATH=bert/wwm_cased_L-24_H-1024_A-16 \
 WORD_DIM=1024 \
 LOWER_CASE=FALSE \
+SEED=$SLURM_ARRAY_TASK_ID \
 BATCH_SIZE=4 \
 allennlp train \
---recover \
--s checkpoints/ucca_bert_ewt \
+-s $CHECKPOINTS \
 --include-package utils \
 --include-package modules \
 --include-package metrics \
