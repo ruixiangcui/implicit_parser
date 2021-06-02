@@ -29,20 +29,3 @@ for split in dev test; do
   python -m semstr.evaluate data/imp/ucca-imp-output-$split data/imp/$split -qs data/imp/ucca-imp-output.$split.scores.txt
 done
 
--------------------------------------------
-#  csplit -zk ucca-imp-output-test.xml '/^<root/' -f '' -b "ucca-imp-output-test/%03d.xml" {533}
-#  perl -nle 'print $& while m{(?<=passageID=")[^"]*(?=")}g' data/imp/ucca-imp-output-$split/* > data/imp/$split-name.txt
-#  for file in *.xml; do read line; mv -v "${file}" "${line}.xml"; done < ../$split-name.txt
-  python -m semstr.evaluate data/imp/ucca-imp-output-test data/imp/test -qs data/imp/ucca-imp-output.test.scores.txt
-#
-#  allennlp predict \
-#  --cuda-device -1 \
-#  --output-file data/ucca-imp-output-test.mrp \
-#  --predictor transition_predictor_ucca \
-#  --include-package utils \
-#  --include-package modules \
-#  --include-package metrics \
-#  --use-dataset-reader \
-#  --batch-size 32 \
-#  checkpoints/ucca_bert \
-#  data/imp/imp.test.aug.mrp
